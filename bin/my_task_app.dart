@@ -1,83 +1,99 @@
-import 'package:my_task_app/create_task.dart';
-import 'package:my_task_app/delete_task.dart';
-import 'package:my_task_app/new_list.dart';
-import 'package:my_task_app/update_task.dart';
-import 'package:my_task_app/error_task.dart';
-
-import 'dart:math';
 import 'dart:io';
+import 'package:my_task_app/class_functions.dart';
 
-// void main() {
 void main() {
-  final app = App();
-
   while (true) {
-    print('Options:');
-    print('1. Add Rectangle');
-    print('2. Update Rectangle');
-    print('3. List Rectangles');
-    print('4. Delete Rectangle');
-    print('5. Exit');
-    stdout.write('Enter your choice: ');
+    print(
+        'Available commands: add, view, view <index>, update <index>, delete <index>, save, load, exit');
+    final input = stdin.readLineSync();
 
-    final choice = int.tryParse(stdin.readLineSync());
-
-    if (choice == null || choice < 1 || choice > 5) {
-      app.handleError('Invalid choice');
+    if (input == null) {
+      // Handle null input gracefully, e.g., by printing an error message and continuing the loop.
+      print('Invalid input. Please try again.');
       continue;
     }
 
-    if (choice == 5) {
-      break;
-    }
+    final parts = input.split(' ');
+    final command = parts[0];
 
-    switch (choice) {
-      case 1:
-        stdout.write('Enter length of the rectangle: ');
-        final length = double.tryParse(stdin.readLineSync());
-        stdout.write('Enter width of the rectangle: ');
-        final width = double.tryParse(stdin.readLineSync());
+    switch (command) {
+      case 'add':
+        try {
+          // Prompt the user for task information
+          print('Enter task name:');
+          final name = stdin.readLineSync();
+          if (name == null || name.isEmpty) {
+            throw Exception('Task name cannot be empty.');
+          }
 
-        if (length != null && width != null) {
-          app.createRectangle(length, width);
-        } else {
-          app.handleError('Invalid input');
+          print('Enter task details:');
+          final details = stdin.readLineSync();
+          if (details == null || details.isEmpty) {
+            throw Exception('Task details cannot be empty.');
+          }
+
+          print('Enter task due date (integer):');
+          final dueDateInput = stdin.readLineSync();
+          int dueDate;
+          try {
+            dueDate = int.parse(dueDateInput!);
+          } catch (e) {
+            throw Exception(
+                'Invalid due date format. Please enter an integer.');
+          }
+
+          addTask(name, details,
+              dueDate.toString()); // Convert dueDate to string for consistency
+          print('Task added successfully.');
+        } catch (e) {
+          print('Error: ${e.toString()}');
         }
         break;
-
-      case 2:
-        stdout.write('Enter ID of the rectangle to update: ');
-        final id = int.tryParse(stdin.readLineSync());
-
-        if (id != null) {
-          stdout.write('Enter new length of the rectangle: ');
-          final newLength = double.tryParse(stdin.readLineSync());
-          stdout.write('Enter new width of the rectangle: ');
-          final newWidth = double.tryParse(stdin.readLineSync());
-
-          if (newLength != null && newWidth != null) {
-            app.updateRectangle(id, newLength, newWidth);
-          } else {
-            app.handleError('Invalid input');
+      case 'view':
+        if (parts.length == 1) {
+          viewTasks();
+        } else if (parts.length == 2) {
+          final index = int.tryParse(parts[1]);
+          viewTaskDescription(index!);
+        } else {
+          print('Usage: view or view <index>');
+        }
+        break;
+      case 'update':
+        if (parts.length < 5) {
+          print('Usage: update <index> <name> <details> <dueDate>');
+        } else {
+          final index = int.tryParse(parts[1]);
+          final name = parts[2];
+          final details = parts[3];
+          final dueDate = parts[4];
+          try {
+            updateTask(index!, name, details, dueDate);
+          } catch (e) {
+            print('Error: ${e.toString()}');
+          }
+        }
+        break;
+      case 'delete':
+        if (parts.length == 2) {
+          final index = int.tryParse(parts[1]);
+          try {
+            deleteTask(index!);
+          } catch (e) {
+            print('Error: ${e.toString()}');
           }
         } else {
-          app.handleError('Invalid ID');
+          print('Usage: delete <index>');
         }
         break;
-
-      case 3:
-        app.listRectangles();
+      case 'save':
+        saveTasksToFile('tasks.json');
         break;
-
-      case 4:
-        stdout.write('Enter ID of the rectangle to delete: ');
-        final id = int.tryParse(stdin.readLineSync());
-
-        if (id != null) {
-          app.deleteRectangle(id);
-        } else {
-          app.handleError('Invalid ID');
-        }
+      case 'load':
+        loadTasksFromFile('tasks.json');
+        break;
+      default:
+        print('Invalid command. Please try again.');
         break;
     }
   }
